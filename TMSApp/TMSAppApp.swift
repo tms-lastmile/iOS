@@ -8,10 +8,14 @@
 import SwiftUI
 
 @main
-struct TMSAppApp: App {
+struct TMSApp: App {
+    
+    @StateObject private var authViewModel = AuthenticationViewModel()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            LoginView()
+                .environmentObject(authViewModel)
         }
     }
 }
