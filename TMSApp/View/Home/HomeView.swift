@@ -14,29 +14,88 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             VStack {
-                if viewModel.isLoading {
-                    ProgressView("Memuat pengiriman...")
+                if viewModel.shipmentNumQuery.isEmpty {
+                    VStack {
+                        HStack {
+                            Picker("Halaman", selection: $viewModel.currentPage) {
+                                ForEach(1...viewModel.totalPages, id: \.self) { page in
+                                    Text("Halaman \(page)").tag(page)
+                                }
+                            }
+                            .pickerStyle(MenuPickerStyle())
+                            .onChange(of: viewModel.currentPage) {
+                                viewModel.fetchShipments()
+                            }
+                            
+                            Stepper(value: $viewModel.perPage, in: 5...20, step: 5) {
+                                Text("\(viewModel.perPage) / halaman")
+                            }
+                            .onChange(of: viewModel.perPage) {
+                                viewModel.currentPage = 1
+                                viewModel.fetchShipments()
+                            }
+                        }
                         .padding()
+                    }
+                }
+                
+                if viewModel.isLoading {
+                    VStack {
+                        Spacer()
+                        ProgressView("Memuat pengiriman...")
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding()
+                        Spacer()
+                    }
                 } else if let errorMessage = viewModel.errorMessage {
-                   Text("Error: \(errorMessage)")
-                       .foregroundColor(.red)
-                       .padding()
+                    VStack {
+                        Spacer()
+                        Text("Error: \(errorMessage)")
+                            .foregroundColor(.red)
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        Spacer()
+                    }
                 } else if viewModel.shipments.isEmpty {
-                   Text("Tidak ada pengiriman yang ditemukan")
-                       .font(.headline)
-                       .foregroundColor(.gray)
-                       .padding()
+                    VStack {
+                        Spacer()
+                        Text("Tidak ada pengiriman yang ditemukan")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        Spacer()
+                    }
                 } else {
-                   List(viewModel.shipments) { shipment in
-                       NavigationLink(destination: ShipmentView(viewModel: ShipmentViewModel(shipment: shipment))) {
-                           ShipmentCardView(shipment: shipment)
-                       }
-                   }
-                   .listStyle(PlainListStyle())
-               }
+                    List(viewModel.shipments, id: \.id) { shipment in
+                        NavigationLink(destination: ShipmentView(viewModel: ShipmentViewModel(shipment: shipment))) {
+                            ShipmentCardView(shipment: shipment)
+                        }
+                    }
+                    .listStyle(PlainListStyle())
+                }
+                
+                VStack {
+                    if viewModel.isSearchActive {
+                        Text("\(viewModel.shipments.count) hasil ditemukan")
+                            .font(.footnote)
+                            .padding(.top, 5)
+                    } else {
+                        Text("Menampilkan halaman \(viewModel.currentPage) dari \(viewModel.totalPages)")
+                            .font(.footnote)
+                            .padding(.top, 5)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, 10)
             }
             .navigationTitle("Pengiriman")
             .searchable(text: $viewModel.shipmentNumQuery, prompt: "Cari nomor pengiriman...")
+            .onChange(of: viewModel.shipmentNumQuery) {
+                if viewModel.shipmentNumQuery.isEmpty {
+                    viewModel.fetchShipments()
+                }
+            }
             .onSubmit(of: .search) {
                 viewModel.searchShipment()
             }
@@ -48,7 +107,6 @@ struct HomeView: View {
         }
     }
 }
-
 
 #Preview {
     HomeView()

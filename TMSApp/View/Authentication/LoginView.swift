@@ -13,65 +13,95 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
+            Color(.systemGray6)
+                .edgesIgnoringSafeArea(.all)
+
             if authViewModel.isAuthenticated {
                 MainView()
             } else {
-                VStack(spacing: 20) {
+                VStack {
+                    Spacer()
+                
                     Image("TMSLogo")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 150, height: 150)
+                        .frame(width: 100, height: 100)
+                        .padding(.bottom, 10)
+                    
+                    Text("Masuk ke TMSApp")
+                        .font(.title)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.black.opacity(0.8))
 
-                    Text("Masuk TMSApp")
-                        .font(.largeTitle)
-                        .bold()
-                        .padding(.bottom, 20)
+                    VStack(spacing: 14) {
+                        TextField("Nama Pengguna", text: $authViewModel.username)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(10)
+                            .shadow(color: .gray.opacity(0.2), radius: 3, x: 0, y: 2)
+                            .autocapitalization(.none)
+                            .disableAutocorrection(true)
 
-                    TextField("Nama Pengguna", text: $authViewModel.username)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .autocapitalization(.none)
-                        .padding(.horizontal)
-
-                    SecureField("Kata Sandi", text: $authViewModel.password)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding(.horizontal)
+                        SecureField("Kata Sandi", text: $authViewModel.password)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(10)
+                            .shadow(color: .gray.opacity(0.2), radius: 3, x: 0, y: 2)
+                    }
+                    .padding(.horizontal, 32)
+                    .padding(.top, 20)
 
                     if let errorMessage = authViewModel.errorMessage {
                         Text(errorMessage)
                             .foregroundColor(.red)
                             .font(.caption)
-                            .padding(.horizontal)
+                            .padding(.top, 5)
                     }
 
                     Button(action: {
                         authViewModel.login()
                     }) {
-                        Text("Masuk")
+                        Text(authViewModel.isLoading ? "Memproses..." : "Masuk")
+                            .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.blue)
+                            .background(authViewModel.isLoading ? Color.gray : Color.blue)
                             .foregroundColor(.white)
-                            .cornerRadius(8)
+                            .cornerRadius(10)
+                            .shadow(color: .gray.opacity(0.3), radius: 4, x: 0, y: 3)
+                            .animation(.easeInOut(duration: 0.2), value: authViewModel.isLoading)
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 32)
+                    .padding(.top, 20)
                     .disabled(authViewModel.isLoading)
-                }
-                .padding()
-                .onAppear {
-                    authViewModel.checkAuth()
+
+                    Spacer()
+
+                    Text("© 2025 TMSApp. All Rights Reserved.")
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                        .padding(.bottom, 20)
                 }
             }
 
             if authViewModel.isLoading {
-                Color.black.opacity(0.4)
+                Color.black.opacity(0.3)
                     .edgesIgnoringSafeArea(.all)
                 
-                ProgressView()
-                    .scaleEffect(2)
-                    .frame(width: 100, height: 100)
-                    .background(Color.white)
-                    .cornerRadius(10)
-                    .shadow(radius: 10)
+                VStack {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    
+                    Text("Sedang masuk...")
+                        .foregroundColor(.white)
+                        .font(.caption)
+                        .padding(.top, 8)
+                }
+                .padding(20)
+                .background(Color.black.opacity(0.8))
+                .cornerRadius(10)
+                .shadow(radius: 10)
             }
         }
     }

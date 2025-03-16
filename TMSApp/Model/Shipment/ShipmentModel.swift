@@ -7,11 +7,36 @@
 
 import Foundation
 
-struct ShipmentResponse: Decodable {
+struct ShipmentSearchResponse: Decodable {
     let success: Bool
     let code: Int
     let message: String
     let data: [Shipment]
+}
+
+struct ShipmentResponse: Decodable {
+    let success: Bool
+    let code: Int
+    let message: String
+    let data: ShipmentData
+}
+
+struct ShipmentData: Decodable {
+    let shipments: [Shipment]
+    let currentSkip: Int
+    let nextSkip: Int?
+    let prevSkip: Int?
+    let perPage: Int
+    let total: Int
+
+    enum CodingKeys: String, CodingKey {
+        case shipments
+        case currentSkip = "current_skip"
+        case nextSkip = "next_skip"
+        case prevSkip = "prev_skip"
+        case perPage = "per_page"
+        case total
+    }
 }
 
 struct Shipment: Decodable, Identifiable {
