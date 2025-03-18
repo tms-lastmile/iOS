@@ -10,6 +10,8 @@ import SwiftUI
 struct ShipmentView: View {
     
     @StateObject var viewModel: ShipmentViewModel
+    @State private var selectedDeliveryOrder: DeliveryOrder?
+    @State private var isShowingScanner = false
     
     var body: some View {
         ScrollView {
@@ -43,7 +45,8 @@ struct ShipmentView: View {
                     VStack {
                         ForEach(viewModel.shipment.deliveryOrders) { deliveryOrder in
                             DeliveryOrderCardView(deliveryOrder: deliveryOrder) {
-                                print("Scan untuk \(deliveryOrder.id)")
+                                selectedDeliveryOrder = deliveryOrder
+                                isShowingScanner = true
                             }
                         }
                     }
@@ -52,6 +55,21 @@ struct ShipmentView: View {
             }
             .padding()
         }
+        .fullScreenCover(isPresented: Binding(
+            get: { isShowingScanner && selectedDeliveryOrder != nil },
+            set: { if !$0 { isShowingScanner = false; selectedDeliveryOrder = nil } }
+        )) {
+            ScannerWrapper(onDone: { path in
+                DispatchQueue.main.async {
+                    print("Scan selesai untuk \(selectedDeliveryOrder?.deliveryOrderNum ?? "UNKNOWN"), file: \(path)")
+                    isShowingScanner = false
+                    selectedDeliveryOrder = nil
+                }
+            })
+            .edgesIgnoringSafeArea(.all)
+            .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+        }
+
     }
 }
 

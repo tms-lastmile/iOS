@@ -42,14 +42,24 @@ struct MetalBuffer<Element>: Resource {
     
     /// Initializes the buffer with the contents of the provided array.
     init(device: MTLDevice, array: [Element], index: UInt32, options: MTLResourceOptions = []) {
+        let byteCount = MemoryLayout<Element>.stride * array.count
         
-        guard let buffer = device.makeBuffer(bytes: array, length: MemoryLayout<Element>.stride * array.count, options: .storageModeShared) else {
+        guard let buffer = device.makeBuffer(length: byteCount, options: options) else {
             fatalError("Failed to create MTLBuffer")
         }
+        
         self.buffer = buffer
         self.count = array.count
         self.index = Int(index)
+        
+        array.withUnsafeBytes { rawBuffer in
+            guard let baseAddress = rawBuffer.baseAddress else {
+                fatalError("Failed to access memory of array")
+            }
+            buffer.contents().copyMemory(from: baseAddress, byteCount: byteCount)
+        }
     }
+
     
     /// Replaces the buffer's memory at the specified element index with the provided value.
     func assign<T>(_ value: T, at index: Int = 0) {
@@ -60,11 +70,14 @@ struct MetalBuffer<Element>: Resource {
     }
     
     /// Replaces the buffer's memory with the values in the array.
-    func assign<Element>(with array: [Element]) {
+    func assign(with array: [Element]) {
         let byteCount = array.count * stride
         precondition(byteCount == buffer.length, "Mismatch between the byte count of the array's contents and the MTLBuffer length.")
-        buffer.contents().copyMemory(from: array, byteCount: byteCount)
+        array.withUnsafeBytes { rawBuffer in
+            buffer.contents().copyMemory(from: rawBuffer.baseAddress!, byteCount: byteCount)
+        }
     }
+
     
     /// Returns a copy of the value at the specified element index in the buffer.
     subscript(index: Int) -> Element {

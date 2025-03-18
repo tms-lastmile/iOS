@@ -303,7 +303,7 @@ final class Renderer {
                 jsonEncoder.outputFormatting = .prettyPrinted
                 
                 let encoded = try jsonEncoder.encode(dataPack)
-                let encodedStr = String(data: encoded, encoding: .utf8)!
+                _ = String(data: encoded, encoding: .utf8)!
                 try await savePic(pic: cvPixelBuffer2UIImage(pixelBuffer: rotatedImage!), filename: "\(frame.timestamp)_\(pickFrames).jpeg", folder: currentFolder + "/data")
                 delegate?.didFinishTask()
                 //                try await saveFile(content: encodedStr, filename: "\(frame.timestamp)_\(pickFrames).json", folder: currentFolder + "/data")

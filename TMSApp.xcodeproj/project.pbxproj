@@ -10,9 +10,22 @@
 		B01B504F2D81CBE30043CE86 /* TMSApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TMSApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B04CA19B2D897756006E901D /* Exceptions for "TMSApp" folder in "TMSApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = B01B504E2D81CBE30043CE86 /* TMSApp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		B01B50512D81CBE30043CE86 /* TMSApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B04CA19B2D897756006E901D /* Exceptions for "TMSApp" folder in "TMSApp" target */,
+			);
 			path = TMSApp;
 			sourceTree = "<group>";
 		};
@@ -255,6 +268,7 @@
 				DEVELOPMENT_TEAM = 578TZCLPNX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "/Users/abdillahsulthan/Library/CloudStorage/OneDrive-UNIVERSITASINDONESIA/tms-lastmile/TMSApp/TMSApp/Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = Yes;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -287,6 +301,7 @@
 				DEVELOPMENT_TEAM = 578TZCLPNX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "/Users/abdillahsulthan/Library/CloudStorage/OneDrive-UNIVERSITASINDONESIA/tms-lastmile/TMSApp/TMSApp/Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = Yes;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

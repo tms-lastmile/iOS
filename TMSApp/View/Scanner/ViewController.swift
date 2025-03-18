@@ -28,7 +28,7 @@ final class ViewController: UIViewController, ARSessionDelegate {
     
     var onDone: (_ path: String) -> Void
     
-    init(onDone: @escaping (_ path: String) -> Void) {
+    init (onDone: @escaping (_ path: String) -> Void) {
         self.onDone = onDone
         super.init(nibName: nil, bundle: nil)
     }
@@ -39,6 +39,10 @@ final class ViewController: UIViewController, ARSessionDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        print("ViewController loaded")
+        
+        view.backgroundColor = .black
         
         guard let device = MTLCreateSystemDefaultDevice() else {
             print("Metal is not supported on this device")
