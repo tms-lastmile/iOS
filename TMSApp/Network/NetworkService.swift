@@ -10,10 +10,10 @@ import Foundation
 class NetworkService {
     static let shared = NetworkService()
     
-    private let baseURL = "http://localhost:8080/api/v1"
+    private let baseURL = "http://192.168.1.9:8080/api/v1"
     
     func login(username: String, password: String, completion: @escaping (Result<LoginData, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/login") else {
+        guard let url = URL(string: "\(baseURL)/mobile/login") else {
             completion(.failure(URLError(.badURL)))
             return
         }
@@ -61,7 +61,7 @@ class NetworkService {
     }
     
     func fetchShipments(skip: Int, limit: Int, completion: @escaping (Result<ShipmentData, Error>) -> Void) {
-            guard let url = URL(string: "\(baseURL)/mobile/shipment?skip=\(skip)&limit=\(limit)") else {
+            guard let url = URL(string: "\(baseURL)/mobile/shipments?skip=\(skip)&limit=\(limit)") else {
                 completion(.failure(URLError(.badURL)))
                 return
             }
