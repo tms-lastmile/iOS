@@ -8,13 +8,33 @@
 import Foundation
 
 class ShipmentViewModel: ObservableObject {
-    @Published var shipment: Shipment
+    @Published var shipment: Shipment?
     @Published var isUploading: Bool = false
     @Published var uploadSuccess: Bool? = nil
     @Published var uploadMessage: String = ""
+    @Published var isLoading: Bool = false
+    
+    private let shipmentId: Int
 
-    init(shipment: Shipment) {
-        self.shipment = shipment
+    init (shipmentId: Int) {
+        self.shipmentId = shipmentId
+    }
+
+    func fetchShipmentDetail() {
+        isLoading = true
+
+        NetworkService.shared.fetchShipmentDetail(id: shipmentId) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+
+                switch result {
+                case .success(let shipment):
+                    self?.shipment = shipment
+                case .failure(let error):
+                    print("Error fetching shipment detail: \(error.localizedDescription)")
+                }
+            }
+        }
     }
     
     func getPlyFile(forDirectory directoryPath: String) -> URL? {

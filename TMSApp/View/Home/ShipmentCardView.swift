@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ShipmentCardView: View {
     
-    let shipment: Shipment
+    let shipment: ShipmentSummary
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -58,15 +58,11 @@ struct ShipmentCardView: View {
 
 #Preview {
     ShipmentCardView(
-        shipment: Shipment(
+        shipment: ShipmentSummary(
             id: 1,
             shipmentNum: "SHIP123456",
             status: "RUNNING",
-            eta: nil,
-            totalDist: 120.5,
-            totalTime: 3.75,
-            plateNumber: "B 1234 XYZ",
-            deliveryOrders: []
+            eta: nil
         )
     )
 }

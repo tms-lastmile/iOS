@@ -68,9 +68,12 @@ struct HomeView: View {
                     }
                 } else {
                     List(viewModel.shipments, id: \.id) { shipment in
-                        NavigationLink(destination: ShipmentView(viewModel: ShipmentViewModel(shipment: shipment))) {
+                        NavigationLink(
+                            destination: ShipmentView(viewModel: ShipmentViewModel(shipmentId: shipment.id))
+                        ) {
                             ShipmentCardView(shipment: shipment)
                         }
+
                     }
                     .listStyle(PlainListStyle())
                 }

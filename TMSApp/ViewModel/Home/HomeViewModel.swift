@@ -9,7 +9,7 @@ import Foundation
 
 class HomeViewModel: ObservableObject {
     
-    @Published var shipments: [Shipment] = []
+    @Published var shipments: [ShipmentSummary] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
     

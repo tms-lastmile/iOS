@@ -13,17 +13,13 @@ struct DeliveryOrderCardView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("\(deliveryOrder.deliveryOrderNum)")
-                .font(.headline)
-                .foregroundColor(.blue)
-            
             HStack {
-                Text("Dimensi: \(Int(deliveryOrder.length)) x \(Int(deliveryOrder.width)) x \(Int(deliveryOrder.height)) cm")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                
+                Text("\(deliveryOrder.deliveryOrderNum)")
+                    .font(.headline)
+                    .foregroundColor(.blue)
+
                 Spacer()
-                
+
                 Button(action: onScanTapped) {
                     Image(systemName: "camera.fill")
                         .foregroundColor(.white)
@@ -44,10 +40,7 @@ struct DeliveryOrderCardView: View {
     DeliveryOrderCardView(
         deliveryOrder: DeliveryOrder(
             id: 1,
-            deliveryOrderNum: "DO-987654",
-            length: 30.0,
-            width: 20.0,
-            height: 15.0
+            deliveryOrderNum: "DO-987654"
         )
     ) {
         print("Scan tapped")

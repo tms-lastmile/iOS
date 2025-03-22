@@ -10,13 +10,9 @@ import Foundation
 struct DeliveryOrder: Decodable, Identifiable {
     let id: Int
     let deliveryOrderNum: String
-    let length: Double
-    let width: Double
-    let height: Double
 
     enum CodingKeys: String, CodingKey {
         case id
         case deliveryOrderNum = "delivery_order_num"
-        case length, width, height
     }
 }

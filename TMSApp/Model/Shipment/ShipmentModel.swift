@@ -7,27 +7,27 @@
 
 import Foundation
 
-struct ShipmentSearchResponse: Decodable {
-    let success: Bool
-    let code: Int
-    let message: String
-    let data: [Shipment]
-}
+struct ShipmentSummary: Identifiable, Decodable {
+    let id: Int
+    let shipmentNum: String
+    let status: String
+    let eta: String?
 
-struct ShipmentResponse: Decodable {
-    let success: Bool
-    let code: Int
-    let message: String
-    let data: ShipmentData
+    enum CodingKeys: String, CodingKey {
+        case id
+        case shipmentNum = "shipment_num"
+        case status
+        case eta
+    }
 }
 
 struct ShipmentData: Decodable {
-    let shipments: [Shipment]
     let currentSkip: Int
     let nextSkip: Int?
     let prevSkip: Int?
     let perPage: Int
     let total: Int
+    let shipments: [ShipmentSummary]
 
     enum CodingKeys: String, CodingKey {
         case shipments
@@ -39,7 +39,7 @@ struct ShipmentData: Decodable {
     }
 }
 
-struct Shipment: Decodable, Identifiable {
+struct Shipment: Identifiable, Decodable {
     let id: Int
     let shipmentNum: String
     let status: String
@@ -59,4 +59,26 @@ struct Shipment: Decodable, Identifiable {
         case plateNumber = "plate_number"
         case deliveryOrders
     }
+}
+
+struct ShipmentListResponse: Decodable {
+    let success: Bool
+    let code: Int
+    let message: String
+    let data: ShipmentData
+}
+
+struct ShipmentResponse: Decodable {
+    let success: Bool
+    let code: Int
+    let message: String
+    let data: Shipment
+}
+
+
+struct ShipmentSearchResponse: Decodable {
+    let success: Bool
+    let code: Int
+    let message: String
+    let data: [ShipmentSummary]
 }
