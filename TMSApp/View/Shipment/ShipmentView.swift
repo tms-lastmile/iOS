@@ -12,6 +12,7 @@ struct ShipmentView: View {
     @State private var selectedDeliveryOrder: DeliveryOrder?
     @State private var isShowingScanner = false
     @State private var showAlert = false
+    @State private var expandedDOId: Int?
 
     var body: some View {
         ZStack {
@@ -47,11 +48,31 @@ struct ShipmentView: View {
                                 .padding(.horizontal)
 
                             VStack {
-                                ForEach(shipment.deliveryOrders) { deliveryOrder in
-                                    DeliveryOrderCardView(deliveryOrder: deliveryOrder) {
-                                        selectedDeliveryOrder = deliveryOrder
-                                        isShowingScanner = true
-                                    }
+                                ForEach(viewModel.deliveryOrders) { deliveryOrder in
+                                    DeliveryOrderSectionView(
+                                        deliveryOrder: deliveryOrder,
+                                        isExpanded: expandedDOId == deliveryOrder.id,
+                                        onToggle: {
+                                            withAnimation {
+                                                if expandedDOId == deliveryOrder.id {
+                                                    expandedDOId = nil
+                                                } else {
+                                                    expandedDOId = deliveryOrder.id
+                                                }
+                                            }
+                                        },
+                                        onAddBoxTapped: {
+                                            viewModel.createBox(for: deliveryOrder.id)
+                                        },
+                                        onSaveBoxesTapped: {
+                                            viewModel.saveBoxes(for: deliveryOrder.id)
+                                        },
+                                        onScanBoxTapped: { box in
+                                            viewModel.selectedBox = box
+                                            selectedDeliveryOrder = deliveryOrder
+                                            isShowingScanner = true
+                                        }
+                                    )
                                 }
                             }
                             .padding(.horizontal)
@@ -78,6 +99,9 @@ struct ShipmentView: View {
         .onAppear {
             viewModel.fetchShipmentDetail()
         }
+        .onChange(of: viewModel.uploadSuccess) {
+            showAlert = true
+        }
         .alert(isPresented: $showAlert) {
             Alert(
                 title: Text(viewModel.uploadSuccess == true ? "Sukses" : "Gagal"),
@@ -92,14 +116,49 @@ struct ShipmentView: View {
             ScannerWrapper(onDone: { path in
                 DispatchQueue.main.async {
                     isShowingScanner = false
-                    viewModel.uploadPlyFile(forDirectory: path)
+                    if let doId = selectedDeliveryOrder?.id,
+                       let boxId = viewModel.selectedBox?.id {
+                        viewModel.uploadPlyFile(forDirectory: path, for: doId, boxId: boxId)
+                    }
                     selectedDeliveryOrder = nil
+                    viewModel.selectedBox = nil
                 }
             })
             .edgesIgnoringSafeArea(.all)
         }
     }
 }
+
+struct DeliveryOrderSectionView: View {
+    let deliveryOrder: DeliveryOrder
+    let isExpanded: Bool
+    let onToggle: () -> Void
+    let onAddBoxTapped: () -> Void
+    let onSaveBoxesTapped: () -> Void
+    let onScanBoxTapped: (Box) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            DeliveryOrderCardView(
+                deliveryOrder: deliveryOrder,
+                isExpanded: isExpanded,
+                onAddBoxTapped: onAddBoxTapped,
+                onToggle: onToggle,
+                onSaveBoxesTapped: onSaveBoxesTapped
+            )
+
+            if isExpanded {
+                ForEach(deliveryOrder.boxes) { box in
+                    BoxCardView(box: box) {
+                        onScanBoxTapped(box)
+                    }
+                }
+            }
+        }
+        .padding(.bottom, 12)
+    }
+}
+
 
 struct DetailRow: View {
     let title: String

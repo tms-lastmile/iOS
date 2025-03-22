@@ -10,8 +10,8 @@ import Foundation
 class NetworkService {
     static let shared = NetworkService()
     
-    private let baseURL = "http://192.168.1.10:8080/api/v1"
-    private let storageURL = "http://192.168.1.10:8081"
+    private let baseURL = "http://192.168.1.9:8080/api/v1"
+    private let storageURL = "http://192.168.1.9:8081"
     
     func login(username: String, password: String, completion: @escaping (Result<LoginData, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/mobile/login") else {
@@ -155,7 +155,6 @@ class NetworkService {
 
         task.resume()
     }
-
     
     func searchShipment(shipmentNum: String, completion: @escaping (Result<[ShipmentSummary], Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/mobile/shipment/search?shipment_num=\(shipmentNum)") else {
@@ -200,6 +199,51 @@ class NetworkService {
 
         task
             .resume()
+    }
+    
+    func saveBoxes(for deliveryOrderId: Int, payload: [[String: Any]], completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/delivery-order/\(deliveryOrderId)/boxes") else {
+            completion(.failure(URLError(.badURL)))
+            return
+        }
+
+        guard let token = KeychainHelper.shared.get(forKey: "authToken") else {
+            completion(.failure(NSError(domain: "AuthError", code: 401, userInfo: [NSLocalizedDescriptionKey: "Akses ditolak"])))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: payload, options: [])
+            request.httpBody = jsonData
+        } catch {
+            completion(.failure(error))
+            return
+        }
+
+        let task = URLSession.shared.dataTask(with: request) { _, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse,
+                  200..<300 ~= httpResponse.statusCode else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 500
+                completion(.failure(NSError(domain: "SaveBoxError", code: statusCode, userInfo: [
+                    NSLocalizedDescriptionKey: "Gagal menyimpan box"
+                ])))
+                return
+            }
+
+            completion(.success(()))
+        }
+
+        task.resume()
     }
     
     func uploadPlyFile(fileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
