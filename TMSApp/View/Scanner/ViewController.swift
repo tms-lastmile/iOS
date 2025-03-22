@@ -177,12 +177,12 @@ final class ViewController: UIViewController, ARSessionDelegate {
     private func updateIsRecording(_isRecording: Bool) {
         isRecording = _isRecording
         if (isRecording){
-            recordButton.setTitle("STOP", for: .normal)
-            recordButton.backgroundColor = .systemRed
+            recordButton.setTitle("HITUNG", for: .normal)
+            recordButton.backgroundColor = .systemTeal
             renderer.currentFolder = getTimeStr()
             createDirectory(folder: renderer.currentFolder + "/data")
         } else {
-            recordButton.setTitle("START", for: .normal)
+            recordButton.setTitle("MULAI", for: .normal)
             recordButton.backgroundColor = .systemBlue
             renderer.savePointCloud { result in
                 switch result {

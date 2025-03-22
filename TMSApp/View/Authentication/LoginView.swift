@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct LoginView: View {
     
@@ -15,6 +16,9 @@ struct LoginView: View {
         ZStack {
             Color(.systemGray6)
                 .edgesIgnoringSafeArea(.all)
+                .onTapGesture {
+                    hideKeyboard()
+                }
 
             if authViewModel.isAuthenticated {
                 MainView()
@@ -59,6 +63,7 @@ struct LoginView: View {
                     }
 
                     Button(action: {
+                        hideKeyboard()
                         authViewModel.login()
                     }) {
                         Text(authViewModel.isLoading ? "Memproses..." : "Masuk")
@@ -104,6 +109,12 @@ struct LoginView: View {
                 .shadow(radius: 10)
             }
         }
+    }
+}
+
+extension View {
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
 
