@@ -7,12 +7,26 @@
 
 import SwiftUI
 
+enum ShipmentAlertType: Identifiable {
+    case confirmSave(deliveryOrderId: Int)
+    case confirmDelete(deliveryOrderId: Int, box: Box)
+    case info(title: String, message: String)
+
+    var id: String {
+        switch self {
+        case .confirmSave(let id): return "confirmSave_\(id)"
+        case .confirmDelete(_, let box): return "confirmDelete_\(box.id)"
+        case .info(let title, _): return title
+        }
+    }
+}
+
 struct ShipmentView: View {
     @StateObject var viewModel: ShipmentViewModel
     @State private var selectedDeliveryOrder: DeliveryOrder?
     @State private var isShowingScanner = false
-    @State private var showAlert = false
     @State private var expandedDOId: Int?
+    @State private var activeAlert: ShipmentAlertType?
 
     var body: some View {
         ZStack {
@@ -23,24 +37,8 @@ struct ShipmentView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         Spacer().frame(height: 4)
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Nomor Pengiriman")
-                                .font(.headline)
 
-                            Text(shipment.shipmentNum)
-                                .font(.title2)
-                                .bold()
-                                .foregroundColor(.blue)
-
-                            Divider()
-
-                            DetailRow(title: "ETA", value: shipment.eta ?? "N/A")
-                            DetailRow(title: "Total Jarak Tempuh", value: "\(shipment.totalDist) KM")
-                            DetailRow(title: "Total Waktu Tempuh", value: "\(shipment.totalTime)")
-                        }
-                        .padding()
-                        .background(Color(.systemBackground))
-                        .cornerRadius(12)
+                        ShipmentInfoView(shipment: shipment)
 
                         if !shipment.deliveryOrders.isEmpty {
                             Text("Delivery Orders")
@@ -49,28 +47,29 @@ struct ShipmentView: View {
 
                             VStack {
                                 ForEach(viewModel.deliveryOrders) { deliveryOrder in
+                                    let isExpanded = expandedDOId == deliveryOrder.id
+
                                     DeliveryOrderSectionView(
                                         deliveryOrder: deliveryOrder,
-                                        isExpanded: expandedDOId == deliveryOrder.id,
+                                        isExpanded: isExpanded,
                                         onToggle: {
                                             withAnimation {
-                                                if expandedDOId == deliveryOrder.id {
-                                                    expandedDOId = nil
-                                                } else {
-                                                    expandedDOId = deliveryOrder.id
-                                                }
+                                                expandedDOId = isExpanded ? nil : deliveryOrder.id
                                             }
                                         },
                                         onAddBoxTapped: {
                                             viewModel.createBox(for: deliveryOrder.id)
                                         },
                                         onSaveBoxesTapped: {
-                                            viewModel.saveBoxes(for: deliveryOrder.id)
+                                            activeAlert = .confirmSave(deliveryOrderId: deliveryOrder.id)
                                         },
                                         onScanBoxTapped: { box in
                                             viewModel.selectedBox = box
                                             selectedDeliveryOrder = deliveryOrder
                                             isShowingScanner = true
+                                        },
+                                        onDeleteBoxTapped: { box in
+                                            activeAlert = .confirmDelete(deliveryOrderId: deliveryOrder.id, box: box)
                                         }
                                     )
                                 }
@@ -91,7 +90,6 @@ struct ShipmentView: View {
                     .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                             viewModel.isUploading = false
-                            showAlert = true
                         }
                     }
             }
@@ -100,14 +98,34 @@ struct ShipmentView: View {
             viewModel.fetchShipmentDetail()
         }
         .onChange(of: viewModel.uploadSuccess) {
-            showAlert = true
+            if let success = viewModel.uploadSuccess {
+                let title = success ? "Sukses" : "Gagal"
+                activeAlert = .info(title: title, message: viewModel.uploadMessage)
+            }
         }
-        .alert(isPresented: $showAlert) {
-            Alert(
-                title: Text(viewModel.uploadSuccess == true ? "Sukses" : "Gagal"),
-                message: Text(viewModel.uploadMessage),
-                dismissButton: .default(Text("OK"))
-            )
+        .alert(item: $activeAlert) { alert in
+            switch alert {
+            case .confirmSave(let doId):
+                return Alert(
+                    title: Text("Simpan Box?"),
+                    message: Text("Apakah kamu yakin ingin menyimpan semua box baru untuk DO ini?"),
+                    primaryButton: .default(Text("Simpan")) {
+                        viewModel.saveBoxes(for: doId)
+                    },
+                    secondaryButton: .cancel()
+                )
+            case .confirmDelete(let doId, let box):
+                return Alert(
+                    title: Text("Hapus Box?"),
+                    message: Text("Apakah kamu yakin ingin menghapus box ini?"),
+                    primaryButton: .destructive(Text("Hapus")) {
+                        viewModel.deleteBox(for: doId, boxId: box.id)
+                    },
+                    secondaryButton: .cancel()
+                )
+            case .info(let title, let message):
+                return Alert(title: Text(title), message: Text(message), dismissButton: .default(Text("OK")))
+            }
         }
         .fullScreenCover(isPresented: Binding(
             get: { isShowingScanner && selectedDeliveryOrder != nil },
@@ -129,6 +147,31 @@ struct ShipmentView: View {
     }
 }
 
+struct ShipmentInfoView: View {
+    let shipment: Shipment
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Nomor Pengiriman")
+                .font(.headline)
+
+            Text(shipment.shipmentNum)
+                .font(.title2)
+                .bold()
+                .foregroundColor(.blue)
+
+            Divider()
+
+            DetailRow(title: "ETA", value: shipment.eta ?? "N/A")
+            DetailRow(title: "Total Jarak Tempuh", value: "\(shipment.totalDist) KM")
+            DetailRow(title: "Total Waktu Tempuh", value: "\(shipment.totalTime)")
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+    }
+}
+
 struct DeliveryOrderSectionView: View {
     let deliveryOrder: DeliveryOrder
     let isExpanded: Bool
@@ -136,6 +179,7 @@ struct DeliveryOrderSectionView: View {
     let onAddBoxTapped: () -> Void
     let onSaveBoxesTapped: () -> Void
     let onScanBoxTapped: (Box) -> Void
+    let onDeleteBoxTapped: (Box) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -149,16 +193,21 @@ struct DeliveryOrderSectionView: View {
 
             if isExpanded {
                 ForEach(deliveryOrder.boxes) { box in
-                    BoxCardView(box: box) {
-                        onScanBoxTapped(box)
-                    }
+                    BoxCardView(
+                        box: box,
+                        onScanTapped: {
+                            onScanBoxTapped(box)
+                        },
+                        onDeleteTapped: {
+                            onDeleteBoxTapped(box)
+                        }
+                    )
                 }
             }
         }
         .padding(.bottom, 12)
     }
 }
-
 
 struct DetailRow: View {
     let title: String

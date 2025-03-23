@@ -298,4 +298,42 @@ class NetworkService {
         task.resume()
     }
 
+    func deleteBox(boxId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/box/\(boxId)") else {
+            completion(.failure(URLError(.badURL)))
+            return
+        }
+
+        guard let token = KeychainHelper.shared.get(forKey: "authToken") else {
+            completion(.failure(NSError(domain: "AuthError", code: 401, userInfo: [
+                NSLocalizedDescriptionKey: "Akses ditolak"
+            ])))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let task = URLSession.shared.dataTask(with: request) { _, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse,
+                  200..<300 ~= httpResponse.statusCode else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 500
+                completion(.failure(NSError(domain: "DeleteBoxError", code: statusCode, userInfo: [
+                    NSLocalizedDescriptionKey: "Gagal menghapus box"
+                ])))
+                return
+            }
+
+            completion(.success(()))
+        }
+
+        task.resume()
+    }
 }

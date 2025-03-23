@@ -57,6 +57,7 @@ struct DeliveryOrderCardView: View {
 struct BoxCardView: View {
     let box: Box
     var onScanTapped: () -> Void
+    var onDeleteTapped: () -> Void
 
     var body: some View {
         HStack {
@@ -67,13 +68,25 @@ struct BoxCardView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
+
             Spacer()
-            Button(action: onScanTapped) {
-                Image(systemName: "camera.viewfinder")
-                    .foregroundColor(.white)
-                    .padding(8)
-                    .background(Color.blue)
-                    .clipShape(Circle())
+
+            HStack(spacing: 8) {
+                Button(action: onScanTapped) {
+                    Image(systemName: "camera.viewfinder")
+                        .foregroundColor(.white)
+                        .padding(8)
+                        .background(Color.blue)
+                        .clipShape(Circle())
+                }
+
+                Button(action: onDeleteTapped) {
+                    Image(systemName: "trash")
+                        .foregroundColor(.white)
+                        .padding(8)
+                        .background(Color.red)
+                        .clipShape(Circle())
+                }
             }
         }
         .padding()
