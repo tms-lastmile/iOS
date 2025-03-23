@@ -29,15 +29,13 @@ struct ShipmentView: View {
     @State private var activeAlert: ShipmentAlertType?
 
     var body: some View {
-        ZStack {
+        Group {
             if viewModel.isLoading {
                 ProgressView("Memuat detail pengiriman...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let shipment = viewModel.shipment {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Spacer().frame(height: 4)
-
+                    LazyVStack(alignment: .leading, spacing: 20) {
                         ShipmentInfoView(shipment: shipment)
 
                         if !shipment.deliveryOrders.isEmpty {
@@ -45,63 +43,64 @@ struct ShipmentView: View {
                                 .font(.headline)
                                 .padding(.horizontal)
 
-                            VStack {
-                                ForEach(viewModel.deliveryOrders) { deliveryOrder in
-                                    let isExpanded = expandedDOId == deliveryOrder.id
+                            ForEach(viewModel.deliveryOrders) { deliveryOrder in
+                                let isExpanded = expandedDOId == deliveryOrder.id
 
-                                    DeliveryOrderSectionView(
-                                        deliveryOrder: deliveryOrder,
-                                        isExpanded: isExpanded,
-                                        onToggle: {
-                                            withAnimation {
-                                                expandedDOId = isExpanded ? nil : deliveryOrder.id
-                                            }
-                                        },
-                                        onAddBoxTapped: {
-                                            viewModel.createBox(for: deliveryOrder.id)
-                                        },
-                                        onSaveBoxesTapped: {
-                                            activeAlert = .confirmSave(deliveryOrderId: deliveryOrder.id)
-                                        },
-                                        onScanBoxTapped: { box in
-                                            viewModel.selectedBox = box
-                                            selectedDeliveryOrder = deliveryOrder
-                                            isShowingScanner = true
-                                        },
-                                        onDeleteBoxTapped: { box in
-                                            activeAlert = .confirmDelete(deliveryOrderId: deliveryOrder.id, box: box)
+                                DeliveryOrderSectionView(
+                                    deliveryOrder: deliveryOrder,
+                                    isExpanded: isExpanded,
+                                    onToggle: {
+                                        withAnimation {
+                                            expandedDOId = isExpanded ? nil : deliveryOrder.id
                                         }
-                                    )
-                                }
+                                    },
+                                    onAddBoxTapped: {
+                                        viewModel.createBox(for: deliveryOrder.id)
+                                    },
+                                    onSaveBoxesTapped: {
+                                        activeAlert = .confirmSave(deliveryOrderId: deliveryOrder.id)
+                                    },
+                                    onScanBoxTapped: { box in
+                                        viewModel.selectedBox = box
+                                        selectedDeliveryOrder = deliveryOrder
+                                        isShowingScanner = true
+                                    },
+                                    onDeleteBoxTapped: { box in
+                                        activeAlert = .confirmDelete(deliveryOrderId: deliveryOrder.id, box: box)
+                                    }
+                                )
                             }
-                            .padding(.horizontal)
                         }
+
+                        Spacer(minLength: 20)
                     }
-                    .padding()
+                    .padding(.horizontal)
+                    .padding(.top, 12)
                 }
             } else {
                 Text("Pengiriman tidak ditemukan.")
                     .foregroundColor(.gray)
             }
         }
+        .navigationTitle("Detail Pengiriman")
         .overlay {
             if viewModel.isUploading {
                 ToastView(message: "Mengunggah file...")
                     .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                             viewModel.isUploading = false
                         }
                     }
             }
-        }
-        .onAppear {
-            viewModel.fetchShipmentDetail()
         }
         .onChange(of: viewModel.uploadSuccess) {
             if let success = viewModel.uploadSuccess {
                 let title = success ? "Sukses" : "Gagal"
                 activeAlert = .info(title: title, message: viewModel.uploadMessage)
             }
+        }
+        .onAppear {
+            viewModel.fetchShipmentDetail()
         }
         .alert(item: $activeAlert) { alert in
             switch alert {
