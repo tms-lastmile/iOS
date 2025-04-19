@@ -41,6 +41,7 @@ struct DeliveryOrderCardView: View {
                             .font(.body)
                             .foregroundColor(.white)
                             .padding(8)
+                            .frame(width: 40, height: 40)
                             .background(Color.orange)
                             .clipShape(Circle())
                             .accessibilityLabel("Simpan box")
@@ -51,6 +52,7 @@ struct DeliveryOrderCardView: View {
                             .font(.body)
                             .foregroundColor(.white)
                             .padding(8)
+                            .frame(width: 40, height: 40)
                             .background(Color.green)
                             .clipShape(Circle())
                             .accessibilityLabel("Tambah box")
@@ -69,66 +71,70 @@ struct BoxCardView: View {
     let box: Box
     var onScanTapped: () -> Void
     var onDeleteTapped: () -> Void
+    var onCalculateTapped: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Box ID")
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundColor(.gray)
                 Spacer()
-                if box.isSaved {
-                    Text("Tersimpan")
-                        .font(.caption2)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.green.opacity(0.15))
-                        .foregroundColor(.green)
-                        .cornerRadius(6)
-                } else {
-                    Text("Belum disimpan")
-                        .font(.caption2)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.red.opacity(0.15))
-                        .foregroundColor(.red)
-                        .cornerRadius(6)
-                }
+                Label(box.isSaved ? "Tersimpan" : "Belum disimpan", systemImage: box.isSaved ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                    .font(.caption2)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(box.isSaved ? Color.green.opacity(0.15) : Color.red.opacity(0.15))
+                    .foregroundColor(box.isSaved ? .green : .red)
+                    .cornerRadius(8)
             }
-
+            
             Text(box.id)
                 .font(.callout)
                 .lineLimit(1)
                 .truncationMode(.middle)
-
-            Text("Dimensi: \(box.length) x \(box.width) x \(box.height)")
-                .font(.footnote)
+            
+            Text("Ukuran: \(box.length) × \(box.width) × \(box.height)")
+                .font(.subheadline)
                 .foregroundColor(.secondary)
 
-            HStack(spacing: 12) {
-                Button(action: onScanTapped) {
-                    Image(systemName: "camera.viewfinder")
-                        .font(.body)
-                        .foregroundColor(.white)
-                        .padding(8)
-                        .background(Color.blue)
-                        .clipShape(Circle())
-                }
-
-                Button(action: onDeleteTapped) {
-                    Image(systemName: "trash")
-                        .font(.body)
-                        .foregroundColor(.white)
-                        .padding(8)
-                        .background(Color.red)
-                        .clipShape(Circle())
-                }
+            HStack(spacing: 16) {
+                BoxActionButton(icon: "camera.viewfinder", color: .blue, label: "Scan", action: onScanTapped)
+                BoxActionButton(icon: "trash", color: .red, label: "Hapus", action: onDeleteTapped)
+                BoxActionButton(icon: "ruler", color: box.isSaved ? .purple : .gray, label: "Hitung", action: onCalculateTapped, disabled: !box.isSaved)
             }
+            
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 2)
+        .background(.ultraThinMaterial)
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 3)
+    }
+}
+
+struct BoxActionButton: View {
+    let icon: String
+    let color: Color
+    let label: String
+    let action: () -> Void
+    var disabled: Bool = false
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Button(action: action) {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 40, height: 40)
+                    .background(disabled ? Color.gray.opacity(0.5) : color)
+                    .clipShape(Circle())
+            }
+            .disabled(disabled)
+
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.primary)
+        }
     }
 }
 

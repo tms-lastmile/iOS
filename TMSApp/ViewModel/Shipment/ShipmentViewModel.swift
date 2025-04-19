@@ -11,6 +11,7 @@ class ShipmentViewModel: ObservableObject {
     @Published var shipment: Shipment?
     @Published var deliveryOrders: [DeliveryOrder] = []
     @Published var isUploading: Bool = false
+    @Published var isCalculating: Bool = false
     @Published var uploadSuccess: Bool? = nil
     @Published var uploadMessage: String = ""
     @Published var isLoading: Bool = false
@@ -172,6 +173,27 @@ class ShipmentViewModel: ObservableObject {
                         self.uploadSuccess = false
                         self.uploadMessage = "Gagal menghapus box: \(error.localizedDescription)"
                     }
+                }
+            }
+        }
+    }
+    
+    func calculateVolume(for box: Box) {
+        guard let doIndex = deliveryOrders.firstIndex(where: { $0.boxes.contains(where: { $0.id == box.id }) }),
+              let _ = deliveryOrders[doIndex].boxes.firstIndex(where: { $0.id == box.id }) else { return }
+
+        isCalculating = true
+
+        NetworkService.shared.calculateBoxVolume(boxId: box.id) { result in
+            DispatchQueue.main.async {
+                self.isCalculating = false
+                switch result {
+                case .success:
+                    self.uploadSuccess = true
+                    self.uploadMessage = "Perhitungan volume berhasil dimulai!"
+                case .failure(let error):
+                    self.uploadSuccess = false
+                    self.uploadMessage = "Gagal memulai perhitungan: \(error.localizedDescription)"
                 }
             }
         }

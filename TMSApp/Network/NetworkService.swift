@@ -336,4 +336,51 @@ class NetworkService {
 
         task.resume()
     }
+    
+    func calculateBoxVolume(boxId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/box/calculate") else {
+            completion(.failure(URLError(.badURL)))
+            return
+        }
+
+        guard let token = KeychainHelper.shared.get(forKey: "authToken") else {
+            completion(.failure(NSError(domain: "AuthError", code: 401, userInfo: [
+                NSLocalizedDescriptionKey: "Akses ditolak"
+            ])))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let payload: [String: Any] = ["box_id": boxId]
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        } catch {
+            completion(.failure(error))
+            return
+        }
+
+        let task = URLSession.shared.dataTask(with: request) { _, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse,
+                  200..<300 ~= httpResponse.statusCode else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 500
+                completion(.failure(NSError(domain: "CalculateBoxError", code: statusCode, userInfo: [
+                    NSLocalizedDescriptionKey: "Gagal memulai perhitungan volume"
+                ])))
+                return
+            }
+
+            completion(.success(()))
+        }
+
+        task.resume()
+    }
 }

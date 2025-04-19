@@ -67,6 +67,9 @@ struct ShipmentView: View {
                                     },
                                     onDeleteBoxTapped: { box in
                                         activeAlert = .confirmDelete(deliveryOrderId: deliveryOrder.id, box: box)
+                                    },
+                                    onCalculateBoxTapped: { box in
+                                        viewModel.calculateVolume(for: box)
                                     }
                                 )
                             }
@@ -89,6 +92,14 @@ struct ShipmentView: View {
                     .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                             viewModel.isUploading = false
+                        }
+                    }
+            }
+            if viewModel.isCalculating {
+                ToastView(message: "Menghitung volume...")
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            viewModel.isCalculating = false
                         }
                     }
             }
@@ -179,7 +190,8 @@ struct DeliveryOrderSectionView: View {
     let onSaveBoxesTapped: () -> Void
     let onScanBoxTapped: (Box) -> Void
     let onDeleteBoxTapped: (Box) -> Void
-
+    let onCalculateBoxTapped: (Box) -> Void
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             DeliveryOrderCardView(
@@ -199,6 +211,9 @@ struct DeliveryOrderSectionView: View {
                         },
                         onDeleteTapped: {
                             onDeleteBoxTapped(box)
+                        },
+                        onCalculateTapped: {
+                            onCalculateBoxTapped(box)
                         }
                     )
                 }
