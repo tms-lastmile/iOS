@@ -27,25 +27,44 @@ class ShipmentViewModel: ObservableObject {
     func boxesForDO(_ deliveryOrderId: Int) -> [Box] {
         deliveryOrders.first(where: { $0.id == deliveryOrderId })?.boxes ?? []
     }
-
+    
     func createBox(for deliveryOrderId: Int, withName name: String, quantity: Int) {
         guard let index = deliveryOrders.firstIndex(where: { $0.id == deliveryOrderId }) else { return }
 
-        var updatedDO = deliveryOrders[index]
-        let newBox = Box(
-            id: UUID().uuidString,
-            name: name,
-            height: 0,
-            width: 0,
-            length: 0,
-            pcUrl: "",
-            scannedAt: nil,
-            isSaved: false,
-            quantity: quantity
-        )
+        NetworkService.shared.getBoxByName(name: name) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(_):
+                    self.uploadSuccess = false
+                    self.uploadMessage = "Box dengan nama '\(name)' sudah ada di database. Gunakan fitur Tambah Box Lama."
+                    
+                case .failure:
+                    var updatedDO = self.deliveryOrders[index]
 
-        updatedDO.boxes.append(newBox)
-        deliveryOrders[index] = updatedDO
+                    let isDuplicateLocal = updatedDO.boxes.contains { $0.name == name }
+                    if isDuplicateLocal {
+                        self.uploadSuccess = false
+                        self.uploadMessage = "Box dengan nama '\(name)' sudah ada di Delivery Order ini."
+                        return
+                    }
+
+                    let newBox = Box(
+                        id: UUID().uuidString,
+                        name: name,
+                        height: 0,
+                        width: 0,
+                        length: 0,
+                        pcUrl: "",
+                        scannedAt: nil,
+                        isSaved: false,
+                        quantity: quantity
+                    )
+
+                    updatedDO.boxes.append(newBox)
+                    self.deliveryOrders[index] = updatedDO
+                }
+            }
+        }
     }
 
     func saveBoxes(for deliveryOrderId: Int) {
@@ -243,6 +262,14 @@ class ShipmentViewModel: ObservableObject {
         guard let index = deliveryOrders.firstIndex(where: { $0.id == deliveryOrderId }) else { return }
         
         var newDOs = deliveryOrders
+
+        let isDuplicate = newDOs[index].boxes.contains { $0.name == box.name }
+        if isDuplicate {
+            self.uploadSuccess = false
+            self.uploadMessage = "Box dengan nama '\(box.name)' sudah ada di DO ini."
+            return
+        }
+
         var newBox = box
         newBox.isSaved = false
         newBox.quantity = quantity
@@ -250,4 +277,5 @@ class ShipmentViewModel: ObservableObject {
         newDOs[index].boxes.append(newBox)
         deliveryOrders = newDOs
     }
+
 }

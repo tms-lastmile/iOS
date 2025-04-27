@@ -102,7 +102,7 @@ struct ShipmentView: View {
             if viewModel.isUploading || viewModel.isCalculating {
                 ToastView(message: viewModel.isUploading ? "Mengunggah file..." : "Menghitung volume...")
                     .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                             if viewModel.isUploading {
                                 viewModel.isUploading = false
                             }
@@ -117,6 +117,7 @@ struct ShipmentView: View {
             if let success = viewModel.uploadSuccess {
                 let title = success ? "Sukses" : "Gagal"
                 activeAlert = .info(title: title, message: viewModel.uploadMessage)
+                viewModel.uploadSuccess = nil
             }
         }
         .onAppear {
