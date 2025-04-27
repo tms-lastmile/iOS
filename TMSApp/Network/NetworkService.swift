@@ -10,8 +10,8 @@ import Foundation
 class NetworkService {
     static let shared = NetworkService()
     
-    private let baseURL = "http://192.168.1.9:8080/api/v1"
-    private let storageURL = "http://192.168.1.9:8081"
+    private let baseURL = "http://192.168.1.203:8080/api/v1"
+    private let storageURL = "http://192.168.1.203:8081"
     
     func login(username: String, password: String, completion: @escaping (Result<LoginData, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/mobile/login") else {
@@ -298,8 +298,8 @@ class NetworkService {
         task.resume()
     }
 
-    func deleteBox(boxId: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/box/\(boxId)") else {
+    func deleteBox(boxId: String, doId: Int, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/box/\(boxId)?doId=\(doId)") else {
             completion(.failure(URLError(.badURL)))
             return
         }
@@ -326,7 +326,7 @@ class NetworkService {
                   200..<300 ~= httpResponse.statusCode else {
                 let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 500
                 completion(.failure(NSError(domain: "DeleteBoxError", code: statusCode, userInfo: [
-                    NSLocalizedDescriptionKey: "Gagal menghapus box"
+                    NSLocalizedDescriptionKey: "Gagal menghapus relasi box dengan DO"
                 ])))
                 return
             }
@@ -379,6 +379,60 @@ class NetworkService {
             }
 
             completion(.success(()))
+        }
+
+        task.resume()
+    }
+    
+    func getBoxByName(name: String, completion: @escaping (Result<Box, Error>) -> Void) {
+        guard let token = KeychainHelper.shared.get(forKey: "authToken") else {
+            completion(.failure(NSError(domain: "Auth", code: 401, userInfo: nil)))
+            return
+        }
+
+        guard let encodedName = name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "\(baseURL)/box/search?name=\(encodedName)") else {
+            completion(.failure(URLError(.badURL)))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data else {
+                completion(.failure(URLError(.badServerResponse)))
+                return
+            }
+
+            do {
+                let decoded = try JSONDecoder().decode(BoxResponse.self, from: data)
+                if let boxData = decoded.data {
+                    let box = Box(
+                        id: boxData.id,
+                        name: boxData.name,
+                        height: boxData.height,
+                        width: boxData.width,
+                        length: boxData.length,
+                        pcUrl: boxData.pcUrl,
+                        scannedAt: boxData.scannedAt,
+                        isSaved: boxData.isSaved,
+                        quantity: 1
+                    )
+                    completion(.success(box))
+                } else {
+                    completion(.failure(NSError(domain: "BoxNotFound", code: 404, userInfo: [NSLocalizedDescriptionKey: "Box tidak ditemukan"])))
+                }
+            } catch {
+                completion(.failure(error))
+            }
         }
 
         task.resume()

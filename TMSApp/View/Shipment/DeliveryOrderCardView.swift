@@ -76,11 +76,11 @@ struct BoxCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Box ID")
+                Text("Nama Box")
                     .font(.caption)
                     .foregroundColor(.gray)
                 Spacer()
-                Label(box.isSaved ? "Tersimpan" : "Belum disimpan", systemImage: box.isSaved ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                Label(box.isSaved ? "Tersimpan di server" : "Belum disimpan di server", systemImage: box.isSaved ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
                     .font(.caption2)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
@@ -89,19 +89,47 @@ struct BoxCardView: View {
                     .cornerRadius(8)
             }
             
-            Text(box.id)
+            Text(box.name)
                 .font(.callout)
                 .lineLimit(1)
                 .truncationMode(.middle)
             
+            HStack {
+                if !box.isSaved {
+                    if (box.pcUrl ?? "").isEmpty {
+                        Label("Belum discan", systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                    } else {
+                        Label("Siap disimpan", systemImage: "tray.and.arrow.down.fill")
+                            .font(.caption2)
+                            .foregroundColor(.blue)
+                    }
+                } else {
+                    if (box.pcUrl ?? "").isEmpty {
+                        Label("Perlu scan untuk hitung", systemImage: "camera.badge.exclamationmark")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                    } else {
+                        Label("Siap dihitung", systemImage: "checkmark.circle.fill")
+                            .font(.caption2)
+                            .foregroundColor(.green)
+                    }
+                }
+            }
+            
             Text("Ukuran: \(box.length) × \(box.width) × \(box.height)")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            
+            Text("Quantity: \(box.quantity)")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
             HStack(spacing: 16) {
                 BoxActionButton(icon: "camera.viewfinder", color: .blue, label: "Scan", action: onScanTapped)
                 BoxActionButton(icon: "trash", color: .red, label: "Hapus", action: onDeleteTapped)
-                BoxActionButton(icon: "ruler", color: box.isSaved ? .purple : .gray, label: "Hitung", action: onCalculateTapped, disabled: !box.isSaved)
+                BoxActionButton(icon: "ruler", color: (box.isSaved && !(box.pcUrl ?? "").isEmpty) ? .purple : .gray, label: "Hitung", action: onCalculateTapped, disabled: !(box.isSaved && !(box.pcUrl ?? "").isEmpty))
             }
             
         }

@@ -10,6 +10,7 @@ import Foundation
 class ShipmentViewModel: ObservableObject {
     @Published var shipment: Shipment?
     @Published var deliveryOrders: [DeliveryOrder] = []
+    @Published var availableBoxes: [Box] = []
     @Published var isUploading: Bool = false
     @Published var isCalculating: Bool = false
     @Published var uploadSuccess: Bool? = nil
@@ -27,18 +28,20 @@ class ShipmentViewModel: ObservableObject {
         deliveryOrders.first(where: { $0.id == deliveryOrderId })?.boxes ?? []
     }
 
-    func createBox(for deliveryOrderId: Int) {
+    func createBox(for deliveryOrderId: Int, withName name: String, quantity: Int) {
         guard let index = deliveryOrders.firstIndex(where: { $0.id == deliveryOrderId }) else { return }
 
         var updatedDO = deliveryOrders[index]
         let newBox = Box(
             id: UUID().uuidString,
+            name: name,
             height: 0,
             width: 0,
             length: 0,
             pcUrl: "",
             scannedAt: nil,
-            isSaved: false
+            isSaved: false,
+            quantity: quantity
         )
 
         updatedDO.boxes.append(newBox)
@@ -47,22 +50,31 @@ class ShipmentViewModel: ObservableObject {
 
     func saveBoxes(for deliveryOrderId: Int) {
         guard let index = deliveryOrders.firstIndex(where: { $0.id == deliveryOrderId }) else { return }
-        let boxesToSave = deliveryOrders[index].boxes.filter { !$0.isSaved }
+        let boxes = deliveryOrders[index].boxes
 
-        guard !boxesToSave.isEmpty else {
+        guard !boxes.isEmpty else {
             self.uploadSuccess = false
-            self.uploadMessage = "Tidak ada box baru yang bisa disimpan."
+            self.uploadMessage = "Tidak ada box yang bisa disimpan."
+            return
+        }
+        
+        let boxesWithoutScan = boxes.filter { ($0.pcUrl ?? "").isEmpty }
+        guard boxesWithoutScan.isEmpty else {
+            self.uploadSuccess = false
+            self.uploadMessage = "Semua box harus sudah discan sebelum menyimpan."
             return
         }
 
-        let payload = boxesToSave.map { box in
+        let payload = boxes.map { box in
             [
                 "id": box.id,
+                "name": box.name,
                 "height": box.height,
                 "width": box.width,
                 "length": box.length,
                 "pcUrl": box.pcUrl ?? "",
-                "isSaved": true
+                "isSaved": box.isSaved,
+                "quantity": box.quantity
             ]
         }
 
@@ -70,11 +82,16 @@ class ShipmentViewModel: ObservableObject {
             DispatchQueue.main.async {
                 switch result {
                 case .success:
-                    self.uploadSuccess = true
-                    self.uploadMessage = "Berhasil menyimpan box ke server."
-                    for i in self.deliveryOrders[index].boxes.indices {
-                        self.deliveryOrders[index].boxes[i].isSaved = true
+                    var updatedOrders = self.deliveryOrders
+                    updatedOrders[index].boxes = boxes.map { oldBox in
+                        var newBox = oldBox
+                        newBox.isSaved = true
+                        return newBox
                     }
+                    self.deliveryOrders = updatedOrders
+
+                    self.uploadSuccess = true
+                    self.uploadMessage = "Berhasil menyimpan semua box."
                 case .failure(let error):
                     self.uploadSuccess = false
                     self.uploadMessage = "Gagal menyimpan box: \(error.localizedDescription)"
@@ -163,17 +180,27 @@ class ShipmentViewModel: ObservableObject {
         deliveryOrders[doIndex].boxes = updatedBoxes
 
         if box.isSaved {
-            NetworkService.shared.deleteBox(boxId: boxId) { result in
+            NetworkService.shared.deleteBox(boxId: boxId, doId: deliveryOrderId) { result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success:
-                        self.uploadSuccess = true
-                        self.uploadMessage = "Box berhasil dihapus dari server."
+                        if updatedBoxes.isEmpty {
+                            self.uploadSuccess = true
+                            self.uploadMessage = "Semua box sudah dihapus dari Delivery Order ini."
+                        } else {
+                            self.uploadSuccess = true
+                            self.uploadMessage = "Relasi Box dan DO berhasil dihapus."
+                        }
                     case .failure(let error):
                         self.uploadSuccess = false
-                        self.uploadMessage = "Gagal menghapus box: \(error.localizedDescription)"
+                        self.uploadMessage = "Gagal menghapus relasi box: \(error.localizedDescription)"
                     }
                 }
+            }
+        } else {
+            if updatedBoxes.isEmpty {
+                self.uploadSuccess = true
+                self.uploadMessage = "Semua box sudah dihapus dari Delivery Order ini."
             }
         }
     }
@@ -197,5 +224,30 @@ class ShipmentViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    func searchBoxByName(_ name: String, completion: @escaping (Box?) -> Void) {
+        NetworkService.shared.getBoxByName(name: name) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let box):
+                    completion(box)
+                case .failure:
+                    completion(nil)
+                }
+            }
+        }
+    }
+    
+    func addExistingBox(_ box: Box, to deliveryOrderId: Int, quantity: Int) {
+        guard let index = deliveryOrders.firstIndex(where: { $0.id == deliveryOrderId }) else { return }
+        
+        var newDOs = deliveryOrders
+        var newBox = box
+        newBox.isSaved = false
+        newBox.quantity = quantity
+
+        newDOs[index].boxes.append(newBox)
+        deliveryOrders = newDOs
     }
 }

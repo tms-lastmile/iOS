@@ -27,6 +27,17 @@ struct ShipmentView: View {
     @State private var isShowingScanner = false
     @State private var expandedDOId: Int?
     @State private var activeAlert: ShipmentAlertType?
+    @State private var selectedDOIdForBoxAction: Int? = nil
+    @State private var isShowingBoxActionSheet = false
+    @State private var isShowingBoxNameForm = false
+    @State private var newBoxName = ""
+    @State private var isShowingBoxIdPrompt = false
+    @State private var inputBoxId = ""
+    @State private var showBoxNotFoundAlert = false
+    @State private var newBoxQuantity: Int = 1
+    @State private var selectedFoundBox: Box? = nil
+    @State private var isShowingQuantityForExistingBox = false
+    @State private var existingBoxQuantity: Int = 1
 
     var body: some View {
         Group {
@@ -55,7 +66,8 @@ struct ShipmentView: View {
                                         }
                                     },
                                     onAddBoxTapped: {
-                                        viewModel.createBox(for: deliveryOrder.id)
+                                        selectedDOIdForBoxAction = deliveryOrder.id
+                                        isShowingBoxActionSheet = true
                                     },
                                     onSaveBoxesTapped: {
                                         activeAlert = .confirmSave(deliveryOrderId: deliveryOrder.id)
@@ -87,19 +99,16 @@ struct ShipmentView: View {
         }
         .navigationTitle("Detail Pengiriman")
         .overlay {
-            if viewModel.isUploading {
-                ToastView(message: "Mengunggah file...")
+            if viewModel.isUploading || viewModel.isCalculating {
+                ToastView(message: viewModel.isUploading ? "Mengunggah file..." : "Menghitung volume...")
                     .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            viewModel.isUploading = false
-                        }
-                    }
-            }
-            if viewModel.isCalculating {
-                ToastView(message: "Menghitung volume...")
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            viewModel.isCalculating = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                            if viewModel.isUploading {
+                                viewModel.isUploading = false
+                            }
+                            if viewModel.isCalculating {
+                                viewModel.isCalculating = false
+                            }
                         }
                     }
             }
@@ -154,6 +163,72 @@ struct ShipmentView: View {
             })
             .edgesIgnoringSafeArea(.all)
         }
+        .confirmationDialog("Tambah Box", isPresented: $isShowingBoxActionSheet, titleVisibility: .visible) {
+            Button("Box Baru") {
+                isShowingBoxNameForm = true
+            }
+            
+            Button("Box Lama") {
+                isShowingBoxActionSheet = false
+                isShowingBoxIdPrompt = true
+            }
+            
+            Button("Batal", role: .cancel) {}
+        }
+        .alert("Nama Box Baru", isPresented: $isShowingBoxNameForm, actions: {
+            TextField("Nama Box", text: $newBoxName)
+            TextField("Jumlah", value: $newBoxQuantity, format: .number)
+                .keyboardType(.numberPad)
+            
+            Button("Simpan") {
+                if let doId = selectedDOIdForBoxAction {
+                    viewModel.createBox(for: doId, withName: newBoxName, quantity: newBoxQuantity)
+                }
+                newBoxName = ""
+                newBoxQuantity = 1
+            }
+            Button("Batal", role: .cancel) {
+                newBoxName = ""
+                newBoxQuantity = 1
+            }
+        })
+        .alert("Masukkan Nama Box", isPresented: $isShowingBoxIdPrompt, actions: {
+            TextField("Nama Box", text: $inputBoxId)
+            Button("Cari") {
+                guard let _ = selectedDOIdForBoxAction else { return }
+                viewModel.searchBoxByName(inputBoxId) { foundBox in
+                    if let box = foundBox {
+                        selectedFoundBox = box
+                        isShowingQuantityForExistingBox = true
+                    } else {
+                        showBoxNotFoundAlert = true
+                    }
+                    inputBoxId = ""
+                }
+            }
+            Button("Batal", role: .cancel) {
+                inputBoxId = ""
+            }
+        })
+        .alert("Jumlah Box", isPresented: $isShowingQuantityForExistingBox, actions: {
+            TextField("Jumlah", value: $existingBoxQuantity, format: .number)
+                .keyboardType(.numberPad)
+            Button("Tambah") {
+                if let box = selectedFoundBox, let doId = selectedDOIdForBoxAction {
+                    viewModel.addExistingBox(box, to: doId, quantity: existingBoxQuantity)
+                }
+                selectedFoundBox = nil
+                existingBoxQuantity = 1
+            }
+            Button("Batal", role: .cancel) {
+                selectedFoundBox = nil
+                existingBoxQuantity = 1
+            }
+        })
+        .alert("Box tidak ditemukan", isPresented: $showBoxNotFoundAlert) {
+            Button("OK", role: .cancel) {}
+        }
+
     }
 }
 
