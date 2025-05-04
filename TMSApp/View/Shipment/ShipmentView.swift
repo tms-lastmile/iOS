@@ -23,18 +23,12 @@ enum ShipmentAlertType: Identifiable {
 
 struct ShipmentView: View {
     @StateObject var viewModel: ShipmentViewModel
-    @State private var selectedDeliveryOrder: DeliveryOrder?
-    @State private var isShowingScanner = false
     @State private var expandedDOId: Int?
     @State private var activeAlert: ShipmentAlertType?
     @State private var selectedDOIdForBoxAction: Int? = nil
-    @State private var isShowingBoxActionSheet = false
-    @State private var isShowingBoxNameForm = false
-    @State private var newBoxName = ""
     @State private var isShowingBoxIdPrompt = false
     @State private var inputBoxId = ""
     @State private var showBoxNotFoundAlert = false
-    @State private var newBoxQuantity: Int = 1
     @State private var selectedFoundBox: Box? = nil
     @State private var isShowingQuantityForExistingBox = false
     @State private var existingBoxQuantity: Int = 1
@@ -54,34 +48,24 @@ struct ShipmentView: View {
                                 .font(.headline)
                                 .padding(.horizontal)
 
-                            ForEach(viewModel.deliveryOrders) { deliveryOrder in
-                                let isExpanded = expandedDOId == deliveryOrder.id
-
-                                DeliveryOrderSectionView(
+                            ForEach(viewModel.deliveryOrders, id: \.id) { deliveryOrder in
+                                DeliveryOrderSectionWrapper(
                                     deliveryOrder: deliveryOrder,
-                                    isExpanded: isExpanded,
+                                    isExpanded: expandedDOId == deliveryOrder.id,
                                     onToggle: {
                                         withAnimation {
-                                            expandedDOId = isExpanded ? nil : deliveryOrder.id
+                                            expandedDOId = (expandedDOId == deliveryOrder.id) ? nil : deliveryOrder.id
                                         }
                                     },
                                     onAddBoxTapped: {
                                         selectedDOIdForBoxAction = deliveryOrder.id
-                                        isShowingBoxActionSheet = true
+                                        isShowingBoxIdPrompt = true
                                     },
                                     onSaveBoxesTapped: {
                                         activeAlert = .confirmSave(deliveryOrderId: deliveryOrder.id)
                                     },
-                                    onScanBoxTapped: { box in
-                                        viewModel.selectedBox = box
-                                        selectedDeliveryOrder = deliveryOrder
-                                        isShowingScanner = true
-                                    },
                                     onDeleteBoxTapped: { box in
                                         activeAlert = .confirmDelete(deliveryOrderId: deliveryOrder.id, box: box)
-                                    },
-                                    onCalculateBoxTapped: { box in
-                                        viewModel.calculateVolume(for: box)
                                     }
                                 )
                             }
@@ -98,21 +82,6 @@ struct ShipmentView: View {
             }
         }
         .navigationTitle("Detail Pengiriman")
-        .overlay {
-            if viewModel.isUploading || viewModel.isCalculating {
-                ToastView(message: viewModel.isUploading ? "Mengunggah file..." : "Menghitung volume...")
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            if viewModel.isUploading {
-                                viewModel.isUploading = false
-                            }
-                            if viewModel.isCalculating {
-                                viewModel.isCalculating = false
-                            }
-                        }
-                    }
-            }
-        }
         .onChange(of: viewModel.uploadSuccess) {
             if let success = viewModel.uploadSuccess {
                 let title = success ? "Sukses" : "Gagal"
@@ -147,52 +116,6 @@ struct ShipmentView: View {
                 return Alert(title: Text(title), message: Text(message), dismissButton: .default(Text("OK")))
             }
         }
-        .fullScreenCover(isPresented: Binding(
-            get: { isShowingScanner && selectedDeliveryOrder != nil },
-            set: { if !$0 { isShowingScanner = false; selectedDeliveryOrder = nil } }
-        )) {
-            ScannerWrapper(onDone: { path in
-                DispatchQueue.main.async {
-                    isShowingScanner = false
-                    if let doId = selectedDeliveryOrder?.id,
-                       let boxId = viewModel.selectedBox?.id {
-                        viewModel.uploadPlyFile(forDirectory: path, for: doId, boxId: boxId)
-                    }
-                    selectedDeliveryOrder = nil
-                    viewModel.selectedBox = nil
-                }
-            })
-            .edgesIgnoringSafeArea(.all)
-        }
-        .confirmationDialog("Tambah Box", isPresented: $isShowingBoxActionSheet, titleVisibility: .visible) {
-            Button("Box Baru") {
-                isShowingBoxNameForm = true
-            }
-            
-            Button("Box Lama") {
-                isShowingBoxActionSheet = false
-                isShowingBoxIdPrompt = true
-            }
-            
-            Button("Batal", role: .cancel) {}
-        }
-        .alert("Nama Box Baru", isPresented: $isShowingBoxNameForm, actions: {
-            TextField("Nama Box", text: $newBoxName)
-            TextField("Jumlah", value: $newBoxQuantity, format: .number)
-                .keyboardType(.numberPad)
-            
-            Button("Simpan") {
-                if let doId = selectedDOIdForBoxAction {
-                    viewModel.createBox(for: doId, withName: newBoxName, quantity: newBoxQuantity)
-                }
-                newBoxName = ""
-                newBoxQuantity = 1
-            }
-            Button("Batal", role: .cancel) {
-                newBoxName = ""
-                newBoxQuantity = 1
-            }
-        })
         .alert("Masukkan Nama Box", isPresented: $isShowingBoxIdPrompt, actions: {
             TextField("Nama Box", text: $inputBoxId)
             Button("Cari") {
@@ -229,7 +152,6 @@ struct ShipmentView: View {
         .alert("Box tidak ditemukan", isPresented: $showBoxNotFoundAlert) {
             Button("OK", role: .cancel) {}
         }
-
     }
 }
 
@@ -258,16 +180,34 @@ struct ShipmentInfoView: View {
     }
 }
 
+private struct DeliveryOrderSectionWrapper: View {
+    let deliveryOrder: DeliveryOrder
+    let isExpanded: Bool
+    let onToggle: () -> Void
+    let onAddBoxTapped: () -> Void
+    let onSaveBoxesTapped: () -> Void
+    let onDeleteBoxTapped: (Box) -> Void
+
+    var body: some View {
+        DeliveryOrderSectionView(
+            deliveryOrder: deliveryOrder,
+            isExpanded: isExpanded,
+            onToggle: onToggle,
+            onAddBoxTapped: onAddBoxTapped,
+            onSaveBoxesTapped: onSaveBoxesTapped,
+            onDeleteBoxTapped: onDeleteBoxTapped
+        )
+    }
+}
+
 struct DeliveryOrderSectionView: View {
     let deliveryOrder: DeliveryOrder
     let isExpanded: Bool
     let onToggle: () -> Void
     let onAddBoxTapped: () -> Void
     let onSaveBoxesTapped: () -> Void
-    let onScanBoxTapped: (Box) -> Void
     let onDeleteBoxTapped: (Box) -> Void
-    let onCalculateBoxTapped: (Box) -> Void
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             DeliveryOrderCardView(
@@ -282,14 +222,8 @@ struct DeliveryOrderSectionView: View {
                 ForEach(deliveryOrder.boxes) { box in
                     BoxCardView(
                         box: box,
-                        onScanTapped: {
-                            onScanBoxTapped(box)
-                        },
                         onDeleteTapped: {
                             onDeleteBoxTapped(box)
-                        },
-                        onCalculateTapped: {
-                            onCalculateBoxTapped(box)
                         }
                     )
                 }

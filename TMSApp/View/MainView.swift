@@ -15,12 +15,17 @@ struct MainView: View {
                     Label("Beranda", systemImage: "house.fill")
                 }
 
+            BoxView()
+                .tabItem {
+                    Label("Box", systemImage: "cube.box.fill")
+                }
+
             ProfileView()
                 .tabItem {
                     Label("Profil", systemImage: "person.fill")
                 }
-            }
         }
+    }
 }
 
 #Preview {

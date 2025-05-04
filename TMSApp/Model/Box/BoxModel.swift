@@ -15,11 +15,11 @@ struct Box: Identifiable, Decodable {
     var length: Double
     var pcUrl: String?
     var scannedAt: String?
-    var isSaved: Bool = false
     var quantity: Int
+    var isNew: Bool = false
     
     enum CodingKeys: String, CodingKey {
-        case id, name, height, width, length, pcUrl, scannedAt, isSaved, quantity
+        case id, name, height, width, length, pcUrl, scannedAt, quantity
     }
 }
 
@@ -39,6 +39,26 @@ struct BoxData: Codable {
     let length: Double
     let pcUrl: String?
     let scannedAt: String?
-    let isSaved: Bool
     let status: String
+}
+
+struct BoxListResponse: Decodable {
+    let success: Bool
+    let code: Int
+    let message: String?
+    let data: [BoxModel]
+    let error: String?
+}
+
+struct BoxModel: Identifiable, Decodable {
+    let id: String
+    var name: String
+    var height: Double
+    var width: Double
+    var length: Double
+    var pcUrl: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case id, name, height, width, length, pcUrl
+    }
 }

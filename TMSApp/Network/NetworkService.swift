@@ -10,8 +10,8 @@ import Foundation
 class NetworkService {
     static let shared = NetworkService()
     
-    private let baseURL = "http://192.168.1.203:8080/api/v1"
-    private let storageURL = "http://192.168.1.203:8081"
+    private let baseURL = "http://192.168.1.7:8080/api/v1"
+    private let storageURL = "http://192.168.1.7:8081"
     
     func login(username: String, password: String, completion: @escaping (Result<LoginData, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/mobile/login") else {
@@ -423,7 +423,6 @@ class NetworkService {
                         length: boxData.length,
                         pcUrl: boxData.pcUrl,
                         scannedAt: boxData.scannedAt,
-                        isSaved: boxData.isSaved,
                         quantity: 1
                     )
                     completion(.success(box))
@@ -433,6 +432,108 @@ class NetworkService {
             } catch {
                 completion(.failure(error))
             }
+        }
+
+        task.resume()
+    }
+    
+    func fetchAllBoxes(completion: @escaping (Result<[BoxModel], Error>) -> Void) {
+        guard let token = KeychainHelper.shared.get(forKey: "authToken") else {
+            completion(.failure(NSError(domain: "AuthError", code: 401, userInfo: [
+                NSLocalizedDescriptionKey: "Akses ditolak"
+            ])))
+            return
+        }
+
+        guard let url = URL(string: "\(baseURL)/boxes") else {
+            completion(.failure(URLError(.badURL)))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data else {
+                completion(.failure(URLError(.badServerResponse)))
+                return
+            }
+
+            do {
+                let decoded = try JSONDecoder().decode(BoxListResponse.self, from: data)
+                if decoded.success {
+                    completion(.success(decoded.data))
+                } else {
+                    completion(.failure(NSError(domain: "BoxAPI", code: decoded.code, userInfo: [
+                        NSLocalizedDescriptionKey: decoded.error ?? "Gagal mengambil daftar box"
+                    ])))
+                }
+            } catch {
+                completion(.failure(error))
+            }
+        }
+
+        task.resume()
+    }
+    
+    func createBox(_ box: BoxModel, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/box") else {
+            completion(.failure(URLError(.badURL)))
+            return
+        }
+
+        guard let token = KeychainHelper.shared.get(forKey: "authToken") else {
+            completion(.failure(NSError(domain: "AuthError", code: 401, userInfo: [
+                NSLocalizedDescriptionKey: "Akses ditolak"
+            ])))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let payload: [String: Any] = [
+            "id": box.id,
+            "name": box.name,
+            "height": box.height,
+            "width": box.width,
+            "length": box.length,
+            "pcUrl": box.pcUrl ?? "",
+            "isSaved": true
+        ]
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        } catch {
+            completion(.failure(error))
+            return
+        }
+
+        let task = URLSession.shared.dataTask(with: request) { _, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse,
+                  200..<300 ~= httpResponse.statusCode else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 500
+                completion(.failure(NSError(domain: "SaveBoxError", code: statusCode, userInfo: [
+                    NSLocalizedDescriptionKey: "Gagal menyimpan box"
+                ])))
+                return
+            }
+
+            completion(.success(()))
         }
 
         task.resume()
