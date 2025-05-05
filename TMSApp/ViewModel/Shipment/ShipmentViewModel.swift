@@ -86,19 +86,17 @@ class ShipmentViewModel: ObservableObject {
     func deleteBox(for deliveryOrderId: Int, boxId: String) {
         guard let doIndex = deliveryOrders.firstIndex(where: { $0.id == deliveryOrderId }) else { return }
         var updatedBoxes = deliveryOrders[doIndex].boxes
-        guard let boxIndex = updatedBoxes.firstIndex(where: { $0.id == boxId }) else { return }
+        guard updatedBoxes.firstIndex(where: { $0.id == boxId }) != nil else { return }
 
+        guard let boxIndex = updatedBoxes.firstIndex(where: { $0.id == boxId }) else { return }
+        let isNew = updatedBoxes[boxIndex].isNew
         updatedBoxes.remove(at: boxIndex)
         deliveryOrders[doIndex].boxes = updatedBoxes
-        
-        if deliveryOrders[doIndex].boxes[boxIndex].isNew {
-            updatedBoxes.remove(at: boxIndex)
-            deliveryOrders[doIndex].boxes = updatedBoxes
+
+        if isNew {
             uploadSuccess = true
             uploadMessage = "Box berhasil dihapus."
         } else {
-            updatedBoxes.remove(at: boxIndex)
-            deliveryOrders[doIndex].boxes = updatedBoxes
             NetworkService.shared.deleteBox(boxId: boxId, doId: deliveryOrderId) { result in
                 DispatchQueue.main.async {
                     switch result {

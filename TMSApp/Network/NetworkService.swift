@@ -507,8 +507,7 @@ class NetworkService {
             "height": box.height,
             "width": box.width,
             "length": box.length,
-            "pcUrl": box.pcUrl ?? "",
-            "isSaved": true
+            "pcUrl": box.pcUrl ?? ""
         ]
 
         do {
