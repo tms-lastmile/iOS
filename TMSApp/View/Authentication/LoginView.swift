@@ -109,6 +109,9 @@ struct LoginView: View {
                 .shadow(radius: 10)
             }
         }
+        .onAppear {
+            authViewModel.checkAuth()
+        }
     }
 }
 
