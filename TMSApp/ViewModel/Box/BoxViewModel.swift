@@ -13,7 +13,7 @@ class BoxViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var uploadSuccess: Bool? = nil
     @Published var uploadMessage: String = ""
-
+    @Published var isCalculating: Bool = false
     @Published var isUploading: Bool = false
     @Published var selectedBox: BoxModel?
 
@@ -42,7 +42,8 @@ class BoxViewModel: ObservableObject {
             height: 0,
             width: 0,
             length: 0,
-            pcUrl: nil
+            pcUrl: nil,
+            status: "created"
         )
 
         selectedBox = newBox
@@ -110,15 +111,23 @@ class BoxViewModel: ObservableObject {
     }
     
     func calculateVolume(for boxId: String) {
+        isCalculating = true
+        uploadSuccess = nil
+        uploadMessage = ""
+
         NetworkService.shared.calculateBoxVolume(boxId: boxId) { [weak self] result in
             DispatchQueue.main.async {
+                self?.isCalculating = false
+
                 switch result {
                 case .success:
                     self?.uploadSuccess = true
-                    self?.uploadMessage = "Perhitungan dimensi berhasil dimulai."
+                    self?.uploadMessage = "Perhitungan dimulai"
+                    self?.fetchBoxes()
                 case .failure(let error):
                     self?.uploadSuccess = false
                     self?.uploadMessage = "Gagal memulai perhitungan: \(error.localizedDescription)"
+                    self?.fetchBoxes()
                 }
             }
         }

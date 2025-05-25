@@ -7,23 +7,34 @@
 
 import SwiftUI
 
+enum Tab {
+    case home
+    case box
+    case profile
+}
+
 struct MainView: View {
+    @State private var selectedTab: Tab = .home
+
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             HomeView()
                 .tabItem {
                     Label("Beranda", systemImage: "house.fill")
                 }
+                .tag(Tab.home)
 
-            BoxView()
+            BoxView(refreshTrigger: selectedTab == .box)
                 .tabItem {
                     Label("Box", systemImage: "cube.box.fill")
                 }
+                .tag(Tab.box)
 
             ProfileView()
                 .tabItem {
                     Label("Profil", systemImage: "person.fill")
                 }
+                .tag(Tab.profile)
         }
     }
 }

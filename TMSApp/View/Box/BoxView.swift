@@ -9,6 +9,7 @@ import SwiftUI
 
 struct BoxView: View {
     @StateObject private var viewModel = BoxViewModel()
+    var refreshTrigger: Bool
     @State private var isShowingAddBoxForm = false
     @State private var newBoxName: String = ""
     @State private var isShowingScanner = false
@@ -51,31 +52,39 @@ struct BoxView: View {
                 }
             }
             .navigationTitle("Box")
+            .onChange(of: refreshTrigger) {
+                viewModel.fetchBoxes()
+            }
             .onAppear {
                 if viewModel.boxes.isEmpty {
                     viewModel.fetchBoxes()
                 }
             }
-            .overlay(
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            isShowingAddBoxForm = true
-                        }) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 24))
-                                .padding()
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .clipShape(Circle())
-                                .shadow(radius: 4)
-                        }
-                        .padding()
+            .overlay {
+                Group {
+                    if viewModel.isUploading {
+                        ToastView(message: "Mengunggah file...")
+                            .onAppear {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    viewModel.isUploading = false
+                                }
+                            }
+                    }
+
+                    if viewModel.isCalculating {
+                        ToastView(message: "Menghitung volume...")
+                    }
+
+                    if viewModel.uploadSuccess != nil {
+                        ToastView(message: viewModel.uploadMessage)
+                            .onAppear {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    viewModel.uploadSuccess = nil
+                                }
+                            }
                     }
                 }
-            )
+            }
             .alert("Tambah Box Baru", isPresented: $isShowingAddBoxForm, actions: {
                 TextField("Nama Box", text: $newBoxName)
 
@@ -103,23 +112,52 @@ struct BoxView: View {
                 .edgesIgnoringSafeArea(.all)
             }
             .overlay {
-                if viewModel.isUploading {
-                    ToastView(message: "Mengunggah file...")
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                viewModel.isUploading = false
+                ZStack {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                isShowingAddBoxForm = true
+                            }) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 24))
+                                    .padding()
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 4)
                             }
+                            .padding()
                         }
-                }
-                if viewModel.uploadSuccess != nil {
-                    ToastView(message: viewModel.uploadMessage)
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                viewModel.uploadSuccess = nil
-                            }
+                    }
+                    
+                    VStack {
+                        if viewModel.isUploading {
+                            ToastView(message: "Mengunggah file...")
+                                .onAppear {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                        viewModel.isUploading = false
+                                    }
+                                }
                         }
+
+                        if viewModel.isCalculating {
+                            ToastView(message: "Menghitung volume...")
+                        }
+
+                        if viewModel.uploadSuccess != nil {
+                            ToastView(message: viewModel.uploadMessage)
+                                .onAppear {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                        viewModel.uploadSuccess = nil
+                                    }
+                                }
+                        }
+                    }
                 }
             }
+
         }
     }
 }

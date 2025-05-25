@@ -35,21 +35,37 @@ struct DeliveryOrderCardView: View {
 
                 Spacer()
 
-                HStack(spacing: 8) {
-                    Button(action: onSaveBoxesTapped) {
-                        Image(systemName: "tray.and.arrow.down")
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background(Color.orange)
-                            .clipShape(Circle())
+                HStack(spacing: 16) {
+                    VStack(spacing: 4) {
+                        Button(action: onSaveBoxesTapped) {
+                            Image(systemName: "tray.and.arrow.down")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                                .foregroundColor(.white)
+                                .padding(12)
+                                .background(Color.orange)
+                                .clipShape(Circle())
+                        }
+                        Text("Simpan")
+                            .font(.caption2)
+                            .foregroundColor(.primary)
                     }
 
-                    Button(action: onAddBoxTapped) {
-                        Image(systemName: "plus")
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background(Color.green)
-                            .clipShape(Circle())
+                    VStack(spacing: 4) {
+                        Button(action: onAddBoxTapped) {
+                            Image(systemName: "plus")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                                .foregroundColor(.white)
+                                .padding(12)
+                                .background(Color.green)
+                                .clipShape(Circle())
+                        }
+                        Text("Tambah")
+                            .font(.caption2)
+                            .foregroundColor(.primary)
                     }
                 }
             }

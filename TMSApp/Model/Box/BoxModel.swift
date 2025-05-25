@@ -57,8 +57,9 @@ struct BoxModel: Identifiable, Decodable {
     var width: Double
     var length: Double
     var pcUrl: String?
+    var status: String
     
     enum CodingKeys: String, CodingKey {
-        case id, name, height, width, length, pcUrl
+        case id, name, height, width, length, pcUrl, status
     }
 }
