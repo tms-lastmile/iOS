@@ -92,6 +92,7 @@ class BoxViewModel: ObservableObject {
                     self?.boxes.append(box)
                     self?.uploadSuccess = true
                     self?.uploadMessage = "Box berhasil disimpan!"
+                    self?.fetchBoxes() 
                 case .failure(let error):
                     self?.uploadSuccess = false
                     self?.uploadMessage = "Gagal menyimpan box: \(error.localizedDescription)"

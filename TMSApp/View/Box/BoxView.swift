@@ -14,6 +14,7 @@ struct BoxView: View {
     @State private var newBoxName: String = ""
     @State private var isShowingScanner = false
     @State private var scannerBoxName: String = ""
+    @State private var isShowingInfo = false
 
     var body: some View {
         NavigationStack {
@@ -49,9 +50,28 @@ struct BoxView: View {
                         )
                     }
                     .listStyle(PlainListStyle())
+                    .refreshable {
+                        viewModel.fetchBoxes()
+                    }
+                    .safeAreaInset(edge: .bottom) {
+                        Color.clear.frame(height: 100)
+                    }
                 }
             }
             .navigationTitle("Box")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        isShowingInfo = true
+                    }) {
+                        Image(systemName: "lightbulb.fill")
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.yellow, .orange)
+                            .font(.system(size: 20))
+                            .padding(6)
+                    }
+                }
+            }
             .onChange(of: refreshTrigger) {
                 viewModel.fetchBoxes()
             }
@@ -85,6 +105,11 @@ struct BoxView: View {
                     }
                 }
             }
+            .alert("Informasi", isPresented: $isShowingInfo, actions: {
+                Button("Tutup", role: .cancel) {}
+            }, message: {
+                Text("Beberapa box mungkin masih dalam proses perhitungan dimensi secara asinkron. Silakan tarik ke bawah untuk menyegarkan daftar.")
+            })
             .alert("Tambah Box Baru", isPresented: $isShowingAddBoxForm, actions: {
                 TextField("Nama Box", text: $newBoxName)
 

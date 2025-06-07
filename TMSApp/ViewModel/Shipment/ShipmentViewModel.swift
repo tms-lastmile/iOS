@@ -14,6 +14,7 @@ class ShipmentViewModel: ObservableObject {
     @Published var uploadSuccess: Bool? = nil
     @Published var uploadMessage: String = ""
     @Published var isLoading: Bool = false
+    @Published var isSaving: Bool = false
 
     private let shipmentId: Int
 
@@ -42,9 +43,12 @@ class ShipmentViewModel: ObservableObject {
                 "quantity": box.quantity
             ]
         }
-
+        
+        isSaving = true
+        
         NetworkService.shared.saveBoxes(for: deliveryOrderId, payload: payload) { result in
             DispatchQueue.main.async {
+                self.isSaving = false
                 switch result {
                 case .success:
                     var updatedOrders = self.deliveryOrders
@@ -138,6 +142,6 @@ class ShipmentViewModel: ObservableObject {
         var newBox = box
         newBox.quantity = quantity
         newBox.isNew = true
-        deliveryOrders[index].boxes.append(newBox)
+        deliveryOrders[index].boxes.insert(newBox, at: 0)
     }
 }

@@ -10,8 +10,8 @@ import Foundation
 class NetworkService {
     static let shared = NetworkService()
     
-    private let baseURL = "http://172.20.10.2:8080/api/v1"
-    private let storageURL = "http://172.20.10.2:8081"
+    private let baseURL = "http://192.168.1.5:8080/api/v1"
+    private let storageURL = "http://192.168.1.5:8081"
     
     func login(username: String, password: String, completion: @escaping (Result<LoginData, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/mobile/login") else {

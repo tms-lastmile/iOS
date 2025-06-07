@@ -81,7 +81,7 @@ struct ListBoxCardView: View {
             Text(label)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.secondary)
-            Text("\(value, specifier: "%.1f") cm")
+            Text("\(value, specifier: "%.2f") cm")
                 .font(.system(size: 12))
                 .foregroundColor(.primary)
         }

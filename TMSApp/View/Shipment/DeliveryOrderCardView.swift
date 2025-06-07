@@ -100,7 +100,7 @@ struct BoxCardView: View {
                 }
             }
 
-            Text("Ukuran: \(box.length) × \(box.width) × \(box.height)")
+            Text(String(format: "Ukuran: %.2f cm × %.2f cm × %.2f cm", box.length, box.width, box.height))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 

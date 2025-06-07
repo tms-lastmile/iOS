@@ -81,6 +81,11 @@ struct ShipmentView: View {
                     .foregroundColor(.gray)
             }
         }
+        .overlay {
+            if viewModel.isSaving {
+                ToastView(message: "Menyimpan box...")
+            }
+        }
         .navigationTitle("Detail Pengiriman")
         .onChange(of: viewModel.uploadSuccess) {
             if let success = viewModel.uploadSuccess {
